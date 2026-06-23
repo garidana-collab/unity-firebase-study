@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unity Firebase 구현 가이드</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #1a1d27;
+    --bg3: #22263a;
+    --card: #1e2235;
+    --border: #2e3350;
+    --accent: #f6a623;
+    --accent2: #5c85ff;
+    --accent3: #4ecdc4;
+    --accent4: #ff6b6b;
+    --accent5: #a29bfe;
+    --text: #e0e4f0;
+    --text2: #8892b0;
+    --green: #64ffda;
+    --yellow: #ffd166;
+    --code-bg: #0d1117;
+    --code-border: #30363d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #1a1d27 0%, #0f1117 60%, #1a1427 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(92,133,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 20%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(246,166,35,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(246,166,35,0.12);
+    border: 1px solid rgba(246,166,35,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+  h1 span { color: var(--accent); }
+  .header-sub {
+    color: var(--text2);
+    font-size: 15px;
+    max-width: 600px;
+  }
+  .header-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* ── NAV ── */
+  nav {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    color: var(--text2);
+    text-decoration: none;
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover { color: var(--text); border-color: var(--border); }
+  nav a.active { color: var(--accent); border-color: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 40px 80px;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    margin-bottom: 60px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .section-num {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+  }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .container { padding: 24px 20px 60px; }
+    header { padding: 32px 20px 28px; }
+    nav { padding: 0 20px; }
+    h1 { font-size: 26px; }
+  }
+
+  /* ── CODE ── */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  .code-header {
+    background: #161b22;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--code-border);
+  }
+  .code-dots { display: flex; gap: 6px; }
+  .code-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .code-filename {
+    font-size: 12px;
+    color: var(--text2);
+    margin-left: 4px;
+  }
+  pre {
+    padding: 20px;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* Syntax Highlight */
+  .kw  { color: #ff7b72; }   /* keyword */
+  .ty  { color: #79c0ff; }   /* type */
+  .fn  { color: #d2a8ff; }   /* function */
+  .str { color: #a5d6ff; }   /* string */
+  .num { color: #f2cc60; }   /* number */
+  .cm  { color: #8b949e; font-style: italic; } /* comment */
+  .pr  { color: #ffa657; }   /* property/field */
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    padding-left: 24px;
+  }
+  .flow::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 20px;
+    bottom: 20px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent2), var(--accent3));
+    border-radius: 2px;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .flow-item:hover {
+    border-color: var(--accent2);
+    transform: translateX(4px);
+  }
+  .flow-item::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent2);
+    border: 2px solid var(--bg);
+    z-index: 1;
+  }
+  .flow-item .fi-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .flow-item .fi-desc {
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .flow-item .fi-code {
+    margin-top: 8px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    background: rgba(0,0,0,0.3);
+    padding: 6px 10px;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent2);
+    color: #a5d6ff;
+    white-space: pre;
+  }
+  .flow-arrow {
+    text-align: left;
+    padding-left: 4px;
+    color: var(--accent2);
+    font-size: 16px;
+    line-height: 1;
+    margin: -2px 0;
+    opacity: 0.6;
+  }
+
+  /* ── DB TREE ── */
+  .db-tree {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .db-root { color: var(--accent); font-weight: 700; }
+  .db-key  { color: #79c0ff; }
+  .db-val  { color: #a5d6ff; }
+  .db-type { color: #8b949e; font-size: 11px; }
+  .db-indent1 { padding-left: 24px; }
+  .db-indent2 { padding-left: 48px; }
+  .db-indent3 { padding-left: 72px; }
+  .db-section-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+
+  /* ── ARCH BOXES ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 800px) {
+    .arch-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .arch-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    position: relative;
+    transition: all 0.25s;
+    cursor: default;
+  }
+  .arch-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .arch-box .ab-icon { font-size: 28px; margin-bottom: 8px; }
+  .arch-box .ab-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .arch-box .ab-role {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+  .ab-orange { border-color: rgba(246,166,35,0.4); box-shadow: 0 0 0 1px rgba(246,166,35,0.1) inset; }
+  .ab-blue   { border-color: rgba(92,133,255,0.4); box-shadow: 0 0 0 1px rgba(92,133,255,0.1) inset; }
+  .ab-teal   { border-color: rgba(78,205,196,0.4); box-shadow: 0 0 0 1px rgba(78,205,196,0.1) inset; }
+  .ab-red    { border-color: rgba(255,107,107,0.4); box-shadow: 0 0 0 1px rgba(255,107,107,0.1) inset; }
+  .ab-purple { border-color: rgba(162,155,254,0.4); box-shadow: 0 0 0 1px rgba(162,155,254,0.1) inset; }
+
+  .arch-arrow-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .arch-arrow { color: var(--text2); font-size: 18px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge-orange { background: rgba(246,166,35,0.15); color: var(--accent); }
+  .badge-blue   { background: rgba(92,133,255,0.15); color: var(--accent2); }
+  .badge-teal   { background: rgba(78,205,196,0.15); color: var(--accent3); }
+  .badge-red    { background: rgba(255,107,107,0.15); color: var(--accent4); }
+  .badge-purple { background: rgba(162,155,254,0.15); color: var(--accent5); }
+  .badge-green  { background: rgba(100,255,218,0.15); color: var(--green); }
+
+  /* ── CALLOUT ── */
+  .callout {
+    display: flex;
+    gap: 14px;
+    background: rgba(92,133,255,0.07);
+    border: 1px solid rgba(92,133,255,0.25);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 16px 0;
+  }
+  .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { font-size: 14px; color: var(--text); }
+  .callout-body strong { color: #fff; }
+  .callout.warn {
+    background: rgba(255,107,107,0.07);
+    border-color: rgba(255,107,107,0.25);
+  }
+  .callout.tip {
+    background: rgba(78,205,196,0.07);
+    border-color: rgba(78,205,196,0.25);
+  }
+
+  /* ── TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  th {
+    background: var(--bg3);
+    color: var(--text2);
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(46,51,80,0.5);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── SEQUENCE DIAGRAM ── */
+  .seq {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 10px;
+    padding: 24px;
+    overflow-x: auto;
+  }
+  .seq-actors {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+  .seq-actor {
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 6px;
+    border-radius: 8px;
+    margin: 0 4px;
+  }
+  .seq-msg {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text2);
+    padding: 4px 0;
+    min-height: 28px;
+  }
+  .seq-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+  }
+  .seq-line.arrow::after {
+    content: '▶';
+    position: absolute;
+    right: -6px;
+    top: -7px;
+    font-size: 10px;
+    color: var(--accent2);
+  }
+  .seq-line.arrow-l::before {
+    content: '◀';
+    position: absolute;
+    left: -6px;
+    top: -7px;
+    font-size: 10px;
+    color: var(--green);
+  }
+  .seq-label {
+    text-align: center;
+    font-size: 11px;
+    white-space: nowrap;
+    padding: 0 8px;
+  }
+  .seq-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+    opacity: 0.4;
+  }
+
+  /* ── STEP BOXES ── */
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-content .st-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .step-content .st-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+  .step-content code {
+    background: rgba(0,0,0,0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #a5d6ff;
+  }
+
+  /* ── HIGHLIGHT ROW ── */
+  .highlight-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .hl-item {
+    flex: 1;
+    min-width: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .hl-item .hl-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+  .hl-item .hl-val {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  /* ── LISTENER BOX ── */
+  .listener-box {
+    border: 2px dashed rgba(78,205,196,0.35);
+    border-radius: 12px;
+    padding: 20px;
+    background: rgba(78,205,196,0.04);
+    margin: 16px 0;
+  }
+  .lb-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .lb-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent3);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+  .lb-title {
+    font-weight: 700;
+    color: var(--accent3);
+    font-size: 14px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text2);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-badge">🔥 Firebase + Unity Engine 6.3</div>
+  <h1>Firebase <span>구현</span> 가이드</h1>
+  <p class="header-sub">이 프로젝트에서 Firebase Authentication, Realtime Database를 활용해 로그인, 세이브 데이터, 실시간 리더보드를 구현한 방법을 상세히 설명합니다.</p>
+  <div class="header-tags">
+    <span class="tag">Firebase Auth</span>
+    <span class="tag">Realtime Database</span>
+    <span class="tag">UniTask (async/await)</span>
+    <span class="tag">Singleton Pattern</span>
+    <span class="tag">Event-Driven</span>
+    <span class="tag">C# / Unity</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <a href="#arch" class="active">전체 구조</a>
+  <a href="#init">초기화</a>
+  <a href="#auth">로그인</a>
+  <a href="#save">세이브</a>
+  <a href="#leaderboard">리더보드</a>
+  <a href="#db">DB 구조</a>
+  <a href="#flow">전체 흐름</a>
+</nav>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 01. 전체 아키텍처 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="arch">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(246,166,35,0.15);">🏗</div>
+    <div>
+      <div class="section-title">전체 아키텍처</div>
+      <div class="section-num">SECTION 01</div>
+    </div>
+  </div>
+
+  <p style="color:var(--text2); margin-bottom:24px;">이 프로젝트는 <strong style="color:#fff;">싱글턴 매니저 5개</strong>가 역할을 분리해 담당합니다. 각 매니저는 <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:12px;color:#a5d6ff;">DontDestroyOnLoad</code>로 씬 전환에도 유지됩니다.</p>
+
+  <div class="arch-grid">
+    <div class="arch-box ab-orange">
+      <div class="ab-icon">🔥</div>
+      <div class="ab-name">FirebaseInitializer</div>
+      <div class="ab-role">Firebase 앱 초기화<br>App / Auth / Database<br>인스턴스 공급</div>
+    </div>
+    <div class="arch-box ab-blue">
+      <div class="ab-icon">🔐</div>
+      <div class="ab-name">AuthManager</div>
+      <div class="ab-role">로그인 / 로그아웃<br>이메일 · 익명 인증<br>상태 이벤트 발행</div>
+    </div>
+    <div class="arch-box ab-teal">
+      <div class="ab-icon">👤</div>
+      <div class="ab-name">ProfileManager</div>
+      <div class="ab-role">닉네임 · 이메일<br>프로필 저장 / 로드<br>users/{uid}</div>
+    </div>
+    <div class="arch-box ab-red">
+      <div class="ab-icon">🎯</div>
+      <div class="ab-name">ScoreManager</div>
+      <div class="ab-role">점수 히스토리 저장<br>최고기록 관리<br>scores/{uid}</div>
+    </div>
+    <div class="arch-box ab-purple">
+      <div class="ab-icon">🏆</div>
+      <div class="ab-name">LeaderboardManager</div>
+      <div class="ab-role">리더보드 저장 / 로드<br>실시간 리스너 관리<br>leaderboard/{uid}</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="callout-icon">💡</span>
+    <div class="callout-body">
+      <strong>의존성 순서:</strong> 모든 매니저는 <code>FirebaseInitializer.WaitForInitializationAsync()</code>를 기다린 뒤 작업을 시작합니다.
+      ScoreManager는 추가로 AuthManager와 ProfileManager가 준비될 때까지 대기합니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">매니저 간 의존 관계</div>
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+        <span class="code-filename">초기화 대기 패턴</span>
+      </div>
+      <pre><code><span class="cm">// 모든 매니저의 Start()에서 공통 사용하는 패턴</span>
+<span class="kw">private async</span> <span class="ty">UniTaskVoid</span> <span class="fn">Start</span>()
+{
+    <span class="cm">// 1. Firebase 초기화 완료 대기</span>
+    <span class="kw">if</span> (!<span class="kw">await</span> <span class="ty">FirebaseInitializer</span>.Instance.<span class="fn">WaitForInitializationAsync</span>())
+        <span class="kw">return</span>;
+
+    <span class="cm">// ScoreManager는 추가로 대기</span>
+    <span class="kw">await</span> <span class="ty">UniTask</span>.<span class="fn">WaitUntil</span>(() => <span class="ty">AuthManager</span>.Instance.IsInitialized);
+    <span class="kw">await</span> <span class="ty">UniTask</span>.<span class="fn">WaitUntil</span>(() => <span class="ty">ProfileManager</span>.Instance.IsInitialized);
+
+    <span class="cm">// 2. 이후 실제 초기화 코드 실행</span>
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 02. Firebase 초기화 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="init">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(246,166,35,0.15);">🔥</div>
+    <div>
+      <div class="section-title">Firebase 초기화 — FirebaseInitializer.cs</div>
+      <div class="section-num">SECTION 02</div>
+    </div>
+  </div>
+
+  <p style="color:var(--text2); margin-bottom:20px;">앱이 시작되면 가장 먼저 실행되는 싱글턴입니다. Firebase SDK의 의존성 체크부터 Auth / Database 인스턴스 확보까지 모두 담당합니다.</p>
+
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <div class="card-title">초기화 상태 관리</div>
+        <table>
+          <tr><th>상태</th><th>의미</th></tr>
+          <tr><td><span class="badge badge-orange">Pending</span></td><td>초기화 진행 중</td></tr>
+          <tr><td><span class="badge badge-green">Ready</span></td><td>사용 가능</td></tr>
+          <tr><td><span class="badge badge-red">Failed</span></td><td>초기화 실패</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">공급하는 인스턴스</div>
+        <table>
+          <tr><th>프로퍼티</th><th>용도</th></tr>
+          <tr><td><code style="color:#a5d6ff;">App</code></td><td>FirebaseApp 인스턴스</td></tr>
+          <tr><td><code style="color:#a5d6ff;">Auth</code></td><td>이메일/익명 로그인</td></tr>
+          <tr><td><code style="color:#a5d6ff;">Database</code></td><td>Realtime DB 읽기/쓰기</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="code-block" style="margin:0;">
+      <div class="code-header">
+        <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+        <span class="code-filename">FirebaseInitializer.cs</span>
+      </div>
+      <pre><code><span class="kw">private async</span> <span class="ty">UniTaskVoid</span> <span class="fn">InitializeFirebaseAsync</span>()
+{
+    <span class="cm">// 1. Firebase SDK 의존성 자동 수정</span>
+    <span class="ty">DependencyStatus</span> status =
+        <span class="kw">await</span> <span class="ty">FirebaseApp</span>
+            .<span class="fn">CheckAndFixDependenciesAsync</span>()
+            .<span class="fn">AsUniTask</span>();
+
+    <span class="kw">if</span> (status != <span class="ty">DependencyStatus</span>.Available)
+    {
+        <span class="fn">Fail</span>(<span class="str">$"의존성 오류: {status}"</span>);
+        <span class="kw">return</span>;
+    }
+
+    <span class="cm">// 2. 핵심 인스턴스 확보</span>
+    App      = <span class="ty">FirebaseApp</span>.DefaultInstance;
+    Database = <span class="fn">GetDatabase</span>(App); <span class="cm">// FirebaseConfig에서 URL 읽음</span>
+    Auth     = <span class="ty">FirebaseAuth</span>.<span class="fn">GetAuth</span>(App);
+
+    State = <span class="ty">InitState</span>.Ready;
+}
+
+<span class="cm">// DB URL을 ScriptableObject에서 읽어 적용</span>
+<span class="kw">private</span> <span class="ty">FirebaseDatabase</span> <span class="fn">GetDatabase</span>(<span class="ty">FirebaseApp</span> app)
+{
+    <span class="ty">FirebaseConfig</span> config =
+        <span class="ty">Resources</span>.<span class="fn">Load</span>&lt;<span class="ty">FirebaseConfig</span>&gt;(<span class="str">"FirebaseConfig"</span>);
+
+    <span class="kw">if</span> (config != <span class="kw">null</span> && !<span class="ty">string</span>.<span class="fn">IsNullOrEmpty</span>(config.databaseUrl))
+        <span class="kw">return</span> <span class="ty">FirebaseDatabase</span>.<span class="fn">GetInstance</span>(app, config.databaseUrl);
+
+    <span class="kw">return</span> <span class="ty">FirebaseDatabase</span>.<span class="fn">GetInstance</span>(app);
+}
+
+<span class="cm">// 다른 매니저들이 대기할 때 사용하는 메서드</span>
+<span class="kw">public async</span> <span class="ty">UniTask</span>&lt;<span class="kw">bool</span>&gt; <span class="fn">WaitForInitializationAsync</span>()
+{
+    <span class="kw">await</span> <span class="ty">UniTask</span>.<span class="fn">WaitUntil</span>(() => State != <span class="ty">InitState</span>.Pending);
+    <span class="kw">return</span> State == <span class="ty">InitState</span>.Ready;
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="callout tip" style="margin-top:16px;">
+    <span class="callout-icon">🛠</span>
+    <div class="callout-body">
+      <strong>FirebaseConfig (ScriptableObject):</strong> DB URL 등 설정값을 <code>Resources/FirebaseConfig</code>에 저장해 코드에서 하드코딩하지 않습니다. <code>google-services.json</code>은 Assets 루트에 배치합니다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 03. 로그인 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="auth">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(92,133,255,0.15);">🔐</div>
+    <div>
+      <div class="section-title">로그인 — AuthManager.cs + LoginUI.cs</div>
+      <div class="section-num">SECTION 03</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-title">지원하는 로그인 방식</div>
+      <table>
+        <tr><th>방식</th><th>Firebase API</th><th>특징</th></tr>
+        <tr>
+          <td><span class="badge badge-orange">익명 로그인</span></td>
+          <td><code style="color:#a5d6ff;font-size:11px;">SignInAnonymouslyAsync()</code></td>
+          <td>계정 불필요, 임시 UID 발급</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">이메일 회원가입</span></td>
+          <td><code style="color:#a5d6ff;font-size:11px;">CreateUserWithEmail...Async()</code></td>
+          <td>신규 계정 생성</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-teal">이메일 로그인</span></td>
+          <td><code style="color:#a5d6ff;font-size:11px;">SignInWithEmailAndPassword...Async()</code></td>
+          <td>기존 계정 로그인</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">상태 감지 메커니즘</div>
+      <div class="flow">
+        <div class="flow-item" style="border-color:rgba(92,133,255,0.4);">
+          <div class="fi-title">auth.StateChanged 이벤트 구독</div>
+          <div class="fi-desc">Firebase SDK가 로그인 상태 변화를 감지하면 자동 호출</div>
+          <div class="fi-code">auth.StateChanged += OnAuthStateChanged;</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item" style="border-color:rgba(92,133,255,0.4);">
+          <div class="fi-title">NotifyLoginState() — 중복 방지</div>
+          <div class="fi-desc">이전 상태와 비교해 실제로 바뀐 경우에만 이벤트 발행</div>
+          <div class="fi-code"><span class="kw">if</span> (signedIn == lastNotifiedSignedIn) <span class="kw">return</span>;</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item" style="border-color:rgba(92,133,255,0.4);">
+          <div class="fi-title">LoginStatusChanged 이벤트 발행</div>
+          <div class="fi-desc">ScoreManager, LoginUI 등 구독자에게 상태 전달</div>
+          <div class="fi-code">LoginStatusChanged?.Invoke(signedIn);</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+      <span class="code-filename">AuthManager.cs — 로그인 메서드 (공통 패턴)</span>
+    </div>
+    <pre><code><span class="cm">// 이메일 로그인 예시 (익명/회원가입도 동일한 try-catch 패턴)</span>
+<span class="kw">public async</span> <span class="ty">UniTask</span>&lt;(<span class="kw">bool</span> success, <span class="kw">string</span> error)&gt;
+    <span class="fn">SignInUserWithEmailAsync</span>(<span class="kw">string</span> email, <span class="kw">string</span> pw)
+{
+    <span class="kw">try</span>
+    {
+        <span class="ty">AuthResult</span> result =
+            <span class="kw">await</span> auth.<span class="fn">SignInWithEmailAndPasswordAsync</span>(email, pw);
+
+        currentUser = result.User;
+        <span class="fn">NotifyLoginState</span>(); <span class="cm">// → LoginStatusChanged 이벤트 발행</span>
+
+        <span class="kw">return</span> (<span class="kw">true</span>, <span class="kw">null</span>);
+    }
+    <span class="kw">catch</span> (<span class="ty">Exception</span> ex)
+    {
+        <span class="cm">// 영어 에러 원문 → 한국어로 파싱</span>
+        <span class="kw">return</span> (<span class="kw">false</span>, <span class="fn">ParseFirebaseError</span>(ex.Message));
+    }
+}
+
+<span class="cm">// Firebase 에러 메시지 → 한국어 변환</span>
+<span class="kw">private string</span> <span class="fn">ParseFirebaseError</span>(<span class="kw">string</span> error)
+{
+    <span class="kw">string</span> lower = error.<span class="fn">ToLowerInvariant</span>();
+
+    <span class="kw">if</span> (lower.<span class="fn">Contains</span>(<span class="str">"already in use"</span>))   <span class="kw">return</span> <span class="str">"이미 사용 중인 이메일입니다."</span>;
+    <span class="kw">if</span> (lower.<span class="fn">Contains</span>(<span class="str">"at least 6"</span>))       <span class="kw">return</span> <span class="str">"비밀번호는 6자 이상이어야 합니다."</span>;
+    <span class="kw">if</span> (lower.<span class="fn">Contains</span>(<span class="str">"badly formatted"</span>))  <span class="kw">return</span> <span class="str">"이메일 형식이 올바르지 않습니다."</span>;
+    <span class="kw">if</span> (lower.<span class="fn">Contains</span>(<span class="str">"network"</span>))          <span class="kw">return</span> <span class="str">"네트워크 연결을 확인해주세요."</span>;
+
+    <span class="kw">return</span> <span class="str">"이메일 또는 비밀번호를 확인해주세요."</span>;
+}</code></pre>
+  </div>
+
+  <div class="callout warn" style="margin-top:16px;">
+    <span class="callout-icon">⚠️</span>
+    <div class="callout-body">
+      <strong>로그인 버튼 중복 방지:</strong> LoginUI에서 로그인 시도 중 <code>SetButtonsInteractable(false)</code>로 버튼을 비활성화하고, 결과가 나오면 다시 활성화합니다. UniTask await 중 중복 클릭을 방지합니다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 04. 세이브 데이터 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="save">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(255,107,107,0.15);">💾</div>
+    <div>
+      <div class="section-title">세이브 데이터 — ScoreManager.cs + ProfileManager.cs</div>
+      <div class="section-num">SECTION 04</div>
+    </div>
+  </div>
+
+  <!-- 4-1. 점수 저장 흐름 -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title" style="color:var(--accent4);">게임 종료 → 점수 자동 저장 흐름</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" style="background:rgba(255,107,107,0.15);color:var(--accent4);">1</div>
+        <div class="step-content">
+          <div class="st-title">게임 종료 이벤트 발행 (GameManager)</div>
+          <div class="st-desc"><code>GameEvents.RaiseGameEnded(finalScore)</code>를 호출합니다. 정적 이벤트 클래스를 통해 매니저 간 직접 참조 없이 통신합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(255,107,107,0.15);color:var(--accent4);">2</div>
+        <div class="step-content">
+          <div class="st-title">ScoreManager가 이벤트 수신</div>
+          <div class="st-desc"><code>GameEvents.GameEnded += HandleGameEnded</code>로 구독 중이다가 <code>SaveScoreAsync(score)</code>를 자동 호출합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(255,107,107,0.15);color:var(--accent4);">3</div>
+        <div class="step-content">
+          <div class="st-title">히스토리에 Push()로 고유 키 생성 후 저장</div>
+          <div class="st-desc"><code>scoresRef.Child(userId).Child("history").Push()</code>로 자동 고유 ID를 부여해 기록을 추가합니다. <code>ServerValue.Timestamp</code>로 서버 시간을 기록합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(255,107,107,0.15);color:var(--accent4);">4</div>
+        <div class="step-content">
+          <div class="st-title">신기록이면 bestscore 갱신 + 리더보드 동기화</div>
+          <div class="st-desc"><code>score > cachedBestScore</code>일 때만 <code>UpdateBestScoreAsync()</code>와 <code>LeaderboardManager.SaveToLeaderboard()</code>를 연쇄 호출합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+      <span class="code-filename">ScoreManager.cs — SaveScoreAsync()</span>
+    </div>
+    <pre><code><span class="kw">private async</span> <span class="ty">UniTask</span>&lt;(<span class="kw">bool</span> success, <span class="kw">string</span> error)&gt; <span class="fn">SaveScoreAsync</span>(<span class="kw">int</span> score)
+{
+    <span class="kw">if</span> (!<span class="ty">AuthManager</span>.Instance.IsLoggedIn)
+        <span class="kw">return</span> (<span class="kw">false</span>, <span class="str">"로그인 필요"</span>);
+
+    <span class="kw">string</span> userId = <span class="ty">AuthManager</span>.Instance.UserId;
+
+    <span class="cm">// ① 히스토리에 Push() — 자동 고유 키로 기록 추가</span>
+    <span class="ty">DatabaseReference</span> newHistoryRef =
+        scoresRef.<span class="fn">Child</span>(userId).<span class="fn">Child</span>(<span class="str">"history"</span>).<span class="fn">Push</span>();
+
+    <span class="ty">Dictionary</span>&lt;<span class="kw">string</span>, <span class="kw">object</span>&gt; scoreData = <span class="kw">new</span>()
+    {
+        { <span class="str">"score"</span>,     score },
+        { <span class="str">"timestamp"</span>, <span class="ty">ServerValue</span>.Timestamp }  <span class="cm">// 서버 시간</span>
+    };
+    <span class="kw">await</span> newHistoryRef.<span class="fn">UpdateChildrenAsync</span>(scoreData);
+
+    <span class="cm">// ② 신기록이면 bestscore 갱신 + 리더보드 반영</span>
+    <span class="kw">if</span> (score > cachedBestScore)
+    {
+        <span class="kw">await</span> <span class="fn">UpdateBestScoreAsync</span>(score);
+        <span class="kw">await</span> <span class="ty">LeaderboardManager</span>.Instance.<span class="fn">SaveToLeaderboard</span>(score);
+    }
+}</code></pre>
+  </div>
+
+  <!-- 4-2. 프로필 저장 -->
+  <div class="card" style="margin-top:20px;">
+    <div class="card-title" style="color:var(--accent3);">ProfileManager — 프로필 저장 전략</div>
+    <div class="highlight-row">
+      <div class="hl-item">
+        <div class="hl-label">최초 저장</div>
+        <div class="hl-val" style="font-size:12px;font-family:monospace;color:#a5d6ff;">SetRawJsonValueAsync(json)</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;">UserProfile 전체를 JSON으로 통째 저장</div>
+      </div>
+      <div class="hl-item">
+        <div class="hl-label">닉네임만 변경</div>
+        <div class="hl-val" style="font-size:12px;font-family:monospace;color:#a5d6ff;">Child("nickname").SetValueAsync()</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;">해당 필드만 업데이트 (불필요한 덮어쓰기 없음)</div>
+      </div>
+      <div class="hl-item">
+        <div class="hl-label">로드</div>
+        <div class="hl-val" style="font-size:12px;font-family:monospace;color:#a5d6ff;">GetValueAsync() → FromJson()</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;">JSON → UserProfile 역직렬화</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-3. 로그인 시 자동 동기화 -->
+  <div class="callout">
+    <span class="callout-icon">🔄</span>
+    <div class="callout-body">
+      <strong>로그인 시 자동 동기화:</strong> ScoreManager는 <code>LoginStatusChanged</code> 이벤트를 구독합니다. 로그인이 감지되면 <code>SyncBestScoreToLeaderboard()</code>를 자동 호출해 기존 최고기록을 리더보드에 반영합니다. 오프라인 중 달성한 기록도 로그인 후 자동 동기화됩니다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 05. 실시간 리더보드 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="leaderboard">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(162,155,254,0.15);">🏆</div>
+    <div>
+      <div class="section-title">실시간 리더보드 — LeaderboardManager.cs + LeaderboardUI.cs</div>
+      <div class="section-num">SECTION 05</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <div>
+      <div class="card">
+        <div class="card-title">리더보드 저장 방식</div>
+        <p style="color:var(--text2);font-size:13px;line-height:1.7;">
+          유저당 <strong style="color:#fff;">항목 1개</strong>만 유지합니다.
+          <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:12px;color:#a5d6ff;">leaderboard/{userId}</code> 경로에
+          <code>UpdateChildrenAsync()</code>로 저장하면, 점수가 갱신될 때 자동으로 덮어씁니다.
+        </p>
+        <div style="margin-top:12px;background:var(--code-bg);border:1px solid var(--code-border);border-radius:8px;padding:12px 14px;font-family:monospace;font-size:12px;">
+          <span style="color:#ffa657;">leaderboard</span><br>
+          &nbsp;&nbsp;<span style="color:#79c0ff;">└─ {userId}</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#a5d6ff;">userId: "abc123"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#a5d6ff;">nickname: "큰형"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#a5d6ff;">score: 9500</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#a5d6ff;">timestamp: 1720000000000</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">일반 로드 (1회성 쿼리)</div>
+        <div class="code-block" style="margin:0;">
+          <div class="code-header">
+            <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+          </div>
+          <pre><code><span class="ty">Query</span> query = leaderboardRef
+    .<span class="fn">OrderByChild</span>(<span class="str">"score"</span>)
+    .<span class="fn">LimitToLast</span>(<span class="num">10</span>); <span class="cm">// 상위 10명</span>
+
+<span class="ty">DataSnapshot</span> snapshot =
+    <span class="kw">await</span> query.<span class="fn">GetValueAsync</span>();
+
+<span class="cm">// 오름차순으로 오므로 역정렬</span>
+list.<span class="fn">Sort</span>((a, b) =>
+    b.score.<span class="fn">CompareTo</span>(a.score));</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="listener-box">
+        <div class="lb-header">
+          <div class="lb-dot"></div>
+          <div class="lb-title">실시간 리스너 (ValueChanged)</div>
+        </div>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">
+          DB 데이터가 변경되는 순간 Firebase가 자동으로 콜백을 호출합니다.
+          다른 유저가 점수를 올리면 <strong style="color:#fff;">내 화면도 즉시 갱신</strong>됩니다.
+        </p>
+        <div class="code-block" style="margin:0;">
+          <div class="code-header">
+            <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+            <span class="code-filename">리스너 시작/중지</span>
+          </div>
+          <pre><code><span class="cm">// 시작</span>
+<span class="kw">public void</span> <span class="fn">StartRealtimeListener</span>(<span class="kw">int</span> limit = <span class="num">10</span>)
+{
+    listenerQuery = leaderboardRef
+        .<span class="fn">OrderByChild</span>(<span class="str">"score"</span>)
+        .<span class="fn">LimitToLast</span>(limit);
+
+    listenerQuery.ValueChanged += <span class="fn">OnValueChanged</span>;
+    isListenerActive = <span class="kw">true</span>;
+}
+
+<span class="cm">// 중지 (씬 종료 / 패널 닫기)</span>
+<span class="kw">public void</span> <span class="fn">StopRealtimeListener</span>()
+{
+    listenerQuery.ValueChanged -= <span class="fn">OnValueChanged</span>;
+    listenerQuery = <span class="kw">null</span>;
+    isListenerActive = <span class="kw">false</span>;
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="callout warn" style="margin-top:12px;">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <strong>스레드 주의!</strong> Firebase의 <code>ValueChanged</code> 콜백은 <strong>백그라운드 스레드</strong>에서 호출됩니다. Unity UI는 메인 스레드에서만 접근 가능하므로 반드시 <code>UniTask.SwitchToMainThread()</code>가 필요합니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot dot-r"></div><div class="code-dot dot-y"></div><div class="code-dot dot-g"></div></div>
+      <span class="code-filename">LeaderboardManager.cs — 실시간 콜백 처리</span>
+    </div>
+    <pre><code><span class="cm">// Firebase 백그라운드 스레드에서 호출됨</span>
+<span class="kw">private void</span> <span class="fn">OnValueChanged</span>(<span class="kw">object</span> sender, <span class="ty">ValueChangedEventArgs</span> args)
+{
+    <span class="kw">if</span> (args.DatabaseError != <span class="kw">null</span>)
+    {
+        <span class="ty">Debug</span>.<span class="fn">Log</span>(<span class="str">$"[Leaderboard] 리스너 오류: {args.DatabaseError.Message}"</span>);
+        <span class="kw">return</span>;
+    }
+
+    <span class="ty">List</span>&lt;<span class="ty">LeaderboardEntry</span>&gt; leaderboard = <span class="fn">ParseEntries</span>(args.Snapshot);
+    <span class="fn">DispatchUpdateAsync</span>(leaderboard).<span class="fn">Forget</span>(); <span class="cm">// 메인 스레드로 전환</span>
+}
+
+<span class="kw">private async</span> <span class="ty">UniTaskVoid</span> <span class="fn">DispatchUpdateAsync</span>(<span class="ty">List</span>&lt;<span class="ty">LeaderboardEntry</span>&gt; leaderboard)
+{
+    <span class="kw">await</span> <span class="ty">UniTask</span>.<span class="fn">SwitchToMainThread</span>(); <span class="cm">// ← Unity 메인 스레드로 복귀</span>
+    OnLeaderboardUpdated?.Invoke(leaderboard); <span class="cm">// UI에 이벤트 전달</span>
+}</code></pre>
+  </div>
+
+  <!-- LeaderboardUI -->
+  <div class="card" style="margin-top:20px;">
+    <div class="card-title">LeaderboardUI — UI 갱신 방식</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" style="background:rgba(162,155,254,0.15);color:var(--accent5);">1</div>
+        <div class="step-content">
+          <div class="st-title">패널 열릴 때 리스너 자동 시작 + 이벤트 구독</div>
+          <div class="st-desc"><code>Start()</code>에서 <code>LeaderboardManager.Instance.StartRealtimeListener()</code>를 호출하고 <code>OnLeaderboardUpdated</code> 이벤트를 구독합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(162,155,254,0.15);color:var(--accent5);">2</div>
+        <div class="step-content">
+          <div class="st-title">데이터 수신 시 기존 항목 전부 삭제 후 재생성</div>
+          <div class="st-desc"><code>foreach (Transform child in leaderboardListParent) Destroy(child.gameObject)</code>로 초기화 후 프리팹을 순위별로 Instantiate합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(162,155,254,0.15);color:var(--accent5);">3</div>
+        <div class="step-content">
+          <div class="st-title">Toggle로 실시간 동기화 ON/OFF</div>
+          <div class="st-desc">Toggle이 꺼지면 <code>StopRealtimeListener()</code>, 켜지면 <code>StartRealtimeListener()</code>를 호출합니다. 불필요한 DB 연결을 줄여 비용을 절감합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(162,155,254,0.15);color:var(--accent5);">4</div>
+        <div class="step-content">
+          <div class="st-title">OnDestroy에서 리스너 반드시 해제</div>
+          <div class="st-desc"><code>LeaderboardManager.Instance.OnLeaderboardUpdated -= OnLeaderboardUpdated</code>와 <code>StopRealtimeListener()</code>를 함께 호출해 메모리 누수를 방지합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 06. DB 구조 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="db">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(78,205,196,0.15);">🗄</div>
+    <div>
+      <div class="section-title">Firebase Realtime Database 구조</div>
+      <div class="section-num">SECTION 06</div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <!-- users -->
+    <div>
+      <div class="db-section-label" style="color:var(--accent3);">👤 유저 프로필</div>
+      <div class="db-tree">
+<span class="db-root">/users</span>
+<span class="db-indent1"><span class="db-key">└─ {userId}</span></span>
+<span class="db-indent2"><span class="db-key">nickname</span>: <span class="db-val">"큰형"</span></span>
+<span class="db-indent2"><span class="db-key">email</span>:    <span class="db-val">"user@mail.com"</span></span>
+<span class="db-indent2"><span class="db-key">createdAt</span>: <span class="db-val">1720000000000</span> <span class="db-type">(ms)</span></span>
+      </div>
+      <div class="card" style="margin-top:8px;padding:12px;">
+        <div style="font-size:12px;color:var(--text2);">
+          <strong style="color:#fff;">관리:</strong> ProfileManager<br>
+          <strong style="color:#fff;">저장:</strong> SetRawJsonValueAsync<br>
+          <strong style="color:#fff;">닉네임만:</strong> Child("nickname").SetValueAsync
+        </div>
+      </div>
+    </div>
+
+    <!-- scores -->
+    <div>
+      <div class="db-section-label" style="color:var(--accent4);">🎯 점수 데이터</div>
+      <div class="db-tree">
+<span class="db-root">/scores</span>
+<span class="db-indent1"><span class="db-key">└─ {userId}</span></span>
+<span class="db-indent2"><span class="db-key">bestscore</span>: <span class="db-val">9500</span></span>
+<span class="db-indent2"><span class="db-key">└─ history</span></span>
+<span class="db-indent3"><span class="db-key">{pushId}</span>:</span>
+<span class="db-indent3"> <span class="db-key">score</span>: <span class="db-val">8000</span></span>
+<span class="db-indent3"> <span class="db-key">timestamp</span>: <span class="db-val">...</span></span>
+<span class="db-indent3"><span class="db-key">{pushId}</span>:</span>
+<span class="db-indent3"> <span class="db-key">score</span>: <span class="db-val">9500</span></span>
+<span class="db-indent3"> <span class="db-key">timestamp</span>: <span class="db-val">...</span></span>
+      </div>
+      <div class="card" style="margin-top:8px;padding:12px;">
+        <div style="font-size:12px;color:var(--text2);">
+          <strong style="color:#fff;">관리:</strong> ScoreManager<br>
+          <strong style="color:#fff;">히스토리:</strong> Push() 자동 키 생성<br>
+          <strong style="color:#fff;">타임스탬프:</strong> ServerValue.Timestamp
+        </div>
+      </div>
+    </div>
+
+    <!-- leaderboard -->
+    <div>
+      <div class="db-section-label" style="color:var(--accent5);">🏆 리더보드</div>
+      <div class="db-tree">
+<span class="db-root">/leaderboard</span>
+<span class="db-indent1"><span class="db-key">└─ {userId}</span></span>
+<span class="db-indent2"><span class="db-key">userId</span>:    <span class="db-val">"abc123"</span></span>
+<span class="db-indent2"><span class="db-key">nickname</span>: <span class="db-val">"큰형"</span></span>
+<span class="db-indent2"><span class="db-key">score</span>:    <span class="db-val">9500</span></span>
+<span class="db-indent2"><span class="db-key">timestamp</span>: <span class="db-val">...</span></span>
+&nbsp;
+&nbsp;
+&nbsp;
+      </div>
+      <div class="card" style="margin-top:8px;padding:12px;">
+        <div style="font-size:12px;color:var(--text2);">
+          <strong style="color:#fff;">관리:</strong> LeaderboardManager<br>
+          <strong style="color:#fff;">저장:</strong> UpdateChildrenAsync (덮어쓰기)<br>
+          <strong style="color:#fff;">쿼리:</strong> OrderByChild("score").LimitToLast(10)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:20px;">
+    <span class="callout-icon">💡</span>
+    <div class="callout-body">
+      <strong>FirebaseValue.ToInt() 유틸:</strong> Firebase Realtime DB는 정수를 <code>long</code> 또는 <code>double</code>로 반환하는 경우가 있어, Unity의 <code>int</code>로 캐스팅할 때 타입 오류가 발생할 수 있습니다. 이를 방지하기 위해 <code>FirebaseValue.ToInt(object value)</code>에서 <code>long</code>, <code>double</code>, <code>int</code> 등 모든 경우를 처리합니다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 07. 전체 흐름 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="flow">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(246,166,35,0.15);">🔁</div>
+    <div>
+      <div class="section-title">전체 실행 흐름 요약</div>
+      <div class="section-num">SECTION 07</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- 앱 시작 흐름 -->
+    <div>
+      <div class="card-title" style="color:var(--accent);margin-bottom:12px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">▶ 앱 시작</div>
+      <div class="flow">
+        <div class="flow-item">
+          <div class="fi-title">FirebaseInitializer.Awake()</div>
+          <div class="fi-desc">CheckAndFixDependencies → App / Auth / DB 인스턴스 확보</div>
+        </div>
+        <div class="flow-arrow">↓ await WaitForInitializationAsync()</div>
+        <div class="flow-item">
+          <div class="fi-title">AuthManager.Start()</div>
+          <div class="fi-desc">auth.StateChanged 이벤트 등록, 기존 로그인 상태 복원</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item">
+          <div class="fi-title">ProfileManager.Start()</div>
+          <div class="fi-desc">users/{uid} 로드 → CachedProfile 업데이트</div>
+        </div>
+        <div class="flow-arrow">↓ WaitUntil Auth + Profile</div>
+        <div class="flow-item">
+          <div class="fi-title">ScoreManager.Start()</div>
+          <div class="fi-desc">scores 레퍼런스 연결, LoginStatusChanged 구독</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item">
+          <div class="fi-title">LeaderboardManager.Start()</div>
+          <div class="fi-desc">leaderboard 레퍼런스 연결, 준비 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 로그인 + 게임 흐름 -->
+    <div>
+      <div class="card-title" style="color:var(--accent2);margin-bottom:12px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">▶ 로그인 → 게임 → 저장</div>
+      <div class="flow">
+        <div class="flow-item" style="border-color:rgba(92,133,255,0.4);">
+          <div class="fi-title">LoginUI → AuthManager.SignIn...()</div>
+          <div class="fi-desc">Firebase Auth 호출 → 성공 시 LoginStatusChanged(true) 발행</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item" style="border-color:rgba(92,133,255,0.4);">
+          <div class="fi-title">ScoreManager.OnLoginStatusChanged()</div>
+          <div class="fi-desc">기존 bestscore 로드 → 리더보드에 자동 동기화</div>
+        </div>
+        <div class="flow-arrow">↓ 게임 플레이</div>
+        <div class="flow-item" style="border-color:rgba(255,107,107,0.4);">
+          <div class="fi-title">GameEvents.RaiseGameEnded(score)</div>
+          <div class="fi-desc">정적 이벤트로 최종 점수 브로드캐스트</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item" style="border-color:rgba(255,107,107,0.4);">
+          <div class="fi-title">ScoreManager.SaveScoreAsync()</div>
+          <div class="fi-desc">history Push() + 신기록이면 bestscore + leaderboard 갱신</div>
+        </div>
+        <div class="flow-arrow">↓ 리더보드 패널 열기</div>
+        <div class="flow-item" style="border-color:rgba(162,155,254,0.4);">
+          <div class="fi-title">LeaderboardUI → StartRealtimeListener()</div>
+          <div class="fi-desc">ValueChanged 이벤트 → SwitchToMainThread → UI 자동 갱신</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 파일 역할 요약표 -->
+  <div class="card" style="margin-top:24px;">
+    <div class="card-title">스크립트 파일 역할 요약</div>
+    <table>
+      <tr>
+        <th>파일</th>
+        <th>역할</th>
+        <th>주요 Firebase API</th>
+      </tr>
+      <tr>
+        <td><span class="badge badge-orange">FirebaseInitializer.cs</span></td>
+        <td>Firebase 초기화 및 인스턴스 공급 허브</td>
+        <td><code style="font-size:11px;color:#a5d6ff;">CheckAndFixDependenciesAsync, FirebaseAuth.GetAuth, FirebaseDatabase.GetInstance</code></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">AuthManager.cs</span></td>
+        <td>이메일 / 익명 로그인 처리 및 상태 이벤트</td>
+        <td><code style="font-size:11px;color:#a5d6ff;">SignInAnonymouslyAsync, CreateUserWithEmailAndPasswordAsync, StateChanged</code></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-teal">ProfileManager.cs</span></td>
+        <td>유저 프로필 (닉네임/이메일) 저장·로드</td>
+        <td><code style="font-size:11px;color:#a5d6ff;">SetRawJsonValueAsync, GetValueAsync, SetValueAsync</code></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-red">ScoreManager.cs</span></td>
+        <td>점수 히스토리·최고기록 저장, 리더보드 트리거</td>
+        <td><code style="font-size:11px;color:#a5d6ff;">Push, UpdateChildrenAsync, SetValueAsync, ServerValue.Timestamp</code></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">LeaderboardManager.cs</span></td>
+        <td>리더보드 저장·로드·실시간 리스너</td>
+        <td><code style="font-size:11px;color:#a5d6ff;">OrderByChild, LimitToLast, ValueChanged, UpdateChildrenAsync</code></td>
+      </tr>
+      <tr>
+        <td><code style="font-size:12px;">FirebaseValue.cs</code></td>
+        <td>Firebase 타입 변환 유틸 (long/double → int)</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><code style="font-size:12px;">GameEvents.cs</code></td>
+        <td>정적 이벤트 버스 (게임 종료 브로드캐스트)</td>
+        <td>—</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<footer>
+  unity-firebase-study &nbsp;·&nbsp; Firebase Auth + Realtime Database &nbsp;·&nbsp; Unity Engine 6.3
+</footer>
+
+<script>
+  // 네비게이션 active 처리
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // 부드러운 스크롤
+  navLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+
+</body>
+</html>
